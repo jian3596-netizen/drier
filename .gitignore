@@ -1,0 +1,14 @@
+# 构建产物
+/build/
+*.elf
+*.hex
+*.bin
+*.map
+
+# 编辑器 / 工具缓存
+.cache/
+compile_commands.json
+
+# 系统
+Thumbs.db
+.DS_Store

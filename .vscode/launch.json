@@ -1,0 +1,21 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // 按 F5 = 用 J-Link 烧录并进入调试。需先安装 SEGGER J-Link 软件包 + Cortex-Debug 扩展。
+      "name": "J-Link 烧录+调试",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "jlink",
+      // J-Link 软件装在这里但没进 PATH, 直接指定 GDB Server 绝对路径:
+      "serverpath": "C:/Program Files/SEGGER/JLink/JLinkGDBServerCL.exe",
+      "cwd": "${workspaceFolder}",
+      "executable": "${workspaceFolder}/build/debug/HGJ.elf",
+      "device": "STM32F030F4",
+      "interface": "swd",
+      "runToEntryPoint": "main",
+      "showDevDebugOutput": "none"
+      // 若 J-Link 提示器件名不符, 把 device 改成 J-Link 设备库里的准确名称
+    }
+  ]
+}

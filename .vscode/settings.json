@@ -1,0 +1,20 @@
+{
+  // CMake Tools: 用 CMakePresets 驱动配置/编译
+  "cmake.useCMakePresets": "always",
+  "cmake.configureOnOpen": true,
+
+  // C/C++ 智能提示跟随 CMake
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+
+  // 这些是嵌入式裸机文件, 关掉无关报红
+  "C_Cpp.default.intelliSenseMode": "gcc-arm",
+
+  // 源码注释是 GBK 编码, 让 VSCode 按 GBK 打开避免乱码
+  "files.encoding": "gbk",
+  "files.autoGuessEncoding": true,
+
+  "files.associations": {
+    "*.h": "c",
+    "*.c": "c"
+  }
+}
