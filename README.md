@@ -53,7 +53,7 @@ cmake --build --preset release    # 产物: build/release/HGJ.hex
 
 ## ⚠️ 安全提示（加热产品）
 
-- PI 增益（`PI_KP`/`PI_KI_INC`）与安全阈值（`RES_MIN/MAX_OHM`、`TEMP_HARD_MAX`）标着 `[TUNE]`/`[BENCH]`，**需台架整定/核实**。
+- PI 增益与安全阈值集中在 `control.c` 顶部的 `g_cfg` 配置结构体（RAM 全局，可在 J-Link 调试器实时改、不必重编），默认值是占位，**需台架整定/核实**。
 - 发布前务必通过安全测试：拔 NTC 探头→停加热、拔排线→停加热、模拟死机→看门狗复位。
 - 强烈建议硬件加**独立温度保护**（温控开关/温度保险丝）——软件替代不了。
 - 详见 [docs/改进意见与安全评估.md](docs/改进意见与安全评估.md)。

@@ -56,7 +56,7 @@ cmake --build --preset debug
 固件为 **V2.0**（双区 PI + 安全联锁），已编译/烧录/上机运行。
 
 1. 编译：Build 出现 **0 error** 即可（warning 多数可忽略），产物在 `build/<debug|release>/HGJ.hex`。
-2. ⚠️ **发布前务必台架验证安全**：拔 NTC 探头→停加热、拔 FPC 排线→停加热、模拟死机→看门狗复位。PI 增益与安全阈值是占位值（`USER_APPLICATION/control.c` 顶部，标 `[TUNE]`/`[BENCH]`），需整定。
+2. ⚠️ **发布前务必台架验证安全**：拔 NTC 探头→停加热、拔 FPC 排线→停加热、模拟死机→看门狗复位。PI 增益与安全阈值是占位值（集中在 `USER_APPLICATION/control.c` 顶部的 `g_cfg` 配置结构体，可在调试器实时改），需整定。
 
 ---
 

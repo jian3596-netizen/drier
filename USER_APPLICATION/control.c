@@ -9,23 +9,43 @@
  *
  *  All-integer (no float) so the Cortex-M0 doesn't pull in the soft-float
  *  library. Control period is the fixed ~100 ms main loop.
- *  Values marked [TUNE] / [BENCH] MUST be tuned / verified on real hardware.
+ *  Tunable parameters live in g_cfg (below): defaults are placeholders and
+ *  MUST be tuned / verified on real hardware.
  * ==========================================================================*/
+/* Structural constants (not meant to be tuned by temperature). */
 #define COMM_TIMEOUT_MS   1000U   /* no valid screen packet within this -> heaters OFF        */
-#define TEMP_HARD_MAX      120U   /* [BENCH] hard over-temp cutoff (degC)                     */
-#define RES_MIN_OHM        500U   /* [BENCH] NTC resistance below this = short -> fault       */
-#define RES_MAX_OHM      30000U   /* [BENCH] NTC resistance above this = open  -> fault       */
-
 #define FAN_RUN              0U   /* fan PWM while heating (inverted: 0 = full, 100 = off)    */
 #define FAN_STOP           100U   /* fan PWM when stopped                                     */
+#define ITERM_LIMIT     100000    /* clamp on scaled integral term (= 100% * 1000)           */
 
-/* PI gains (integer fixed-point). Control period dt ~= 0.1 s (baked into KI_INC).
- *   PI_KP     : proportional gain, %power per degC error.            [TUNE]
- *   PI_KI_INC : integral increment per cycle = Ki * dt * 1000.       [TUNE]
- *               (Ki=0.40, dt=0.1s -> 40). Integral term is kept scaled x1000. */
-#define PI_KP               12
-#define PI_KI_INC           40
-#define ITERM_LIMIT     100000    /* clamp on scaled integral term (= 100% * 1000) */
+/* ---------------------------------------------------------------------------
+ *  Bench-tunable configuration (type ControlCfg, declared in control.h).
+ *
+ *  These are RAM globals (NOT #define) on purpose: you can read AND change
+ *  every field LIVE in the J-Link debugger's Watch / Live-Watch window while
+ *  the board runs -- no recompile. Edit a field, resume, and it takes effect
+ *  on the next ~100 ms loop. This is the embedded equivalent of a config file.
+ *  The defaults below are starting points and still need bench tuning.
+ *
+ *    plate_temp_max : heating-plate sensor (temp3) over-temp cutoff [degC].
+ *                     temp3 >= this -> BOTH heaters cut off (fan keeps purging).
+ *                     Mirrors the original firmware's safety cutoff; the screen
+ *                     raises its own error popup at temp > 128.
+ *    hard_temp_max  : per-zone (temp1/temp2) over-temp cutoff [degC].
+ *    res_min_ohm    : NTC resistance below this = short -> that zone faults off.
+ *    res_max_ohm    : NTC resistance above this = open  -> that zone faults off.
+ *    pi_kp          : PI proportional gain, %power per degC of error.
+ *    pi_ki_inc      : PI integral increment per cycle = Ki*dt*1000
+ *                     (Ki=0.40, dt=0.1s -> 40). Integral term is scaled x1000.
+ * ------------------------------------------------------------------------- */
+ControlCfg g_cfg = {
+    128,      /* plate_temp_max : temp3 >= 128 -> both heaters off (screen alarms at >128) */
+    120,      /* hard_temp_max  : per-zone temp1/temp2 over-temp cutoff                     */
+    500,      /* res_min_ohm    : NTC short threshold                                       */
+    30000,    /* res_max_ohm    : NTC open  threshold                                       */
+    12,       /* pi_kp                                                                      */
+    40        /* pi_ki_inc      : = Ki*dt*1000 (Ki=0.40, dt=0.1s)                           */
+};
 
 /* Latched screen state + per-zone integral term (scaled x1000) */
 static uint8_t  s_run     = 0;
@@ -59,20 +79,20 @@ static void fans_set(uint16_t duty)
 /* Open circuit -> huge (or wrapped-huge) resistance; short -> tiny. Either = fault. */
 static uint8_t sensor_fault(uint32_t res_ohm)
 {
-    return (res_ohm < RES_MIN_OHM || res_ohm > RES_MAX_OHM) ? 1 : 0;
+    return (res_ohm < g_cfg.res_min_ohm || res_ohm > g_cfg.res_max_ohm) ? 1 : 0;
 }
 
 /* Integer PI (per zone) with clamping anti-windup. Returns 0..100 %. */
 static int32_t pi_update(uint8_t z, int32_t setpoint, int32_t meas)
 {
     int32_t err = setpoint - meas;
-    int32_t out = PI_KP * err + s_iterm[z] / 1000;
+    int32_t out = g_cfg.pi_kp * err + s_iterm[z] / 1000;
     if (out > 0 && out < 100)             /* integrate only when not saturated */
     {
-        s_iterm[z] += PI_KI_INC * err;
+        s_iterm[z] += g_cfg.pi_ki_inc * err;
         if (s_iterm[z] >  ITERM_LIMIT) s_iterm[z] =  ITERM_LIMIT;
         if (s_iterm[z] < -ITERM_LIMIT) s_iterm[z] = -ITERM_LIMIT;
-        out = PI_KP * err + s_iterm[z] / 1000;
+        out = g_cfg.pi_kp * err + s_iterm[z] / 1000;
     }
     if (out > 100) out = 100;
     if (out < 0)   out = 0;
@@ -83,7 +103,7 @@ static int32_t pi_update(uint8_t z, int32_t setpoint, int32_t meas)
 static void zone_update(uint8_t z, TIM_HandleTypeDef *htim, uint32_t ch,
                         uint32_t res, uint8_t temp)
 {
-    if (sensor_fault(res) || temp >= TEMP_HARD_MAX)
+    if (sensor_fault(res) || temp >= g_cfg.hard_temp_max)
     {
         __HAL_TIM_SetCompare(htim, ch, 99);   /* OFF */
         s_iterm[z] = 0;
@@ -137,11 +157,25 @@ void Control_Update(void)
     }
 
     /* Run and preheat both control to the setpoint (requirement #3).
-       Note: per-zone over-temp is checked inside zone_update(); we do NOT gate
-       the whole thing on temp3 (it may be an unused/floating channel). */
+       Per-zone over-temp is checked inside zone_update(); the heating-plate
+       sensor (temp3) gives a separate whole-unit over-temp backstop below. */
     if (s_run == 1 || s_preheat == 1)
     {
         fans_set(FAN_RUN);                                  /* fan must run while heating */
+
+        /* Plate over-temp backstop (re-added): heating-plate sensor (temp3) too
+           hot -> cut BOTH heaters, keep the fan running to purge heat. Protects
+           the plate/housing. temp3 comes from the screen; an OPEN plate NTC
+           reads ~0 (cold) so this won't false-trip, but it also can't see an
+           over-temp while the plate probe is disconnected. Threshold is
+           g_cfg.plate_temp_max (live-tunable). */
+        if (s_t3 >= g_cfg.plate_temp_max)
+        {
+            heaters_off();
+            s_iterm[0] = s_iterm[1] = 0;
+            return;
+        }
+
         zone_update(0, &htim16, TIM_CHANNEL_1, g_Res[0], s_t1);  /* zone 1 */
         zone_update(1, &htim1,  TIM_CHANNEL_2, g_Res[1], s_t2);  /* zone 2 */
     }

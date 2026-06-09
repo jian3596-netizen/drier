@@ -46,7 +46,6 @@ extern "C" {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-extern uint8_t Rx_buf[10];
 
 /* USER CODE END EC */
 
@@ -62,10 +61,6 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define KEY2_Pin GPIO_PIN_0
-#define KEY2_GPIO_Port GPIOF
-#define KEY1_Pin GPIO_PIN_1
-#define KEY1_GPIO_Port GPIOF
 #define FAN1_Pin GPIO_PIN_7
 #define FAN1_GPIO_Port GPIOA
 #define FAN2_Pin GPIO_PIN_1
