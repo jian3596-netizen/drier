@@ -37,6 +37,9 @@
  *    pi_kp          : PI proportional gain, %power per degC of error.
  *    pi_ki_inc      : PI integral increment per cycle = Ki*dt*1000
  *                     (Ki=0.40, dt=0.1s -> 40). Integral term is scaled x1000.
+ *    preheat_timeout_min : preheat auto-stops this many minutes after the user
+ *                     switches it on (default 60). Live-tunable -- set it to 1
+ *                     in the debugger to test the auto-stop quickly.
  * ------------------------------------------------------------------------- */
 ControlCfg g_cfg = {
     128,      /* plate_temp_max : temp3 >= 128 -> both heaters off (screen alarms at >128) */
@@ -47,7 +50,8 @@ ControlCfg g_cfg = {
               /*                  too low -> a cold/room-temp probe looked "open" and BOTH  */
               /*                  zones were force-OFF (the "won't heat from cold" bug).    */
     12,       /* pi_kp                                                                      */
-    40        /* pi_ki_inc      : = Ki*dt*1000 (Ki=0.40, dt=0.1s)                           */
+    40,       /* pi_ki_inc      : = Ki*dt*1000 (Ki=0.40, dt=0.1s)                           */
+    60        /* preheat_timeout_min : preheat auto-stops 60 min after switched on          */
 };
 
 /* Latched screen state + per-zone integral term (scaled x1000) */
@@ -56,6 +60,13 @@ static uint8_t  s_preheat = 0;
 static uint8_t  s_setpt   = 0;
 static uint8_t  s_t1 = 0, s_t2 = 0, s_t3 = 0;
 static int32_t  s_iterm[2] = {0, 0};
+
+/* Preheat ownership: s_preheat is the raw screen flag; s_preheat_active is the
+   effective state THIS board controls, so preheat (a) defaults OFF at every
+   boot even if the screen flag is already on, and (b) auto-stops on a timer. */
+static uint8_t  s_preheat_active = 0;
+static uint8_t  s_preheat_seen   = 0;   /* first screen packet adopted yet?      */
+static uint32_t s_preheat_start  = 0;   /* HAL tick when preheat was switched on  */
 
 /* Heater PWM is INVERTED: compare 0 = full power, 99 = OFF. pct in 0..100. */
 static void heater_pwm(TIM_HandleTypeDef *htim, uint32_t ch, int32_t pct)
@@ -139,16 +150,35 @@ void Control_Update(void)
 
     if (st_Uart1.USART_RX_SUCCESS)
     {
+        uint8_t pre;
         st_Uart1.USART_RX_SUCCESS = 0;
         s_t1      = st_Uart1.a_Rx_Buf[1];
         s_t2      = st_Uart1.a_Rx_Buf[2];
         s_t3      = st_Uart1.a_Rx_Buf[3];
         s_run     = st_Uart1.a_Rx_Buf[4];
         s_setpt   = st_Uart1.a_Rx_Buf[5];
-        s_preheat = st_Uart1.a_Rx_Buf[6];
+
+        /* Preheat: activate the effective state ONLY on a fresh OFF->ON edge of
+           the screen flag AFTER boot. The first packet is just adopted (no
+           activation), so a flag left ON across a reboot will NOT auto-start
+           preheat -> "every power-on defaults to preheat OFF". */
+        pre = st_Uart1.a_Rx_Buf[6];
+        if (!s_preheat_seen)            s_preheat_seen = 1;
+        else if (pre && !s_preheat)   { s_preheat_active = 1; s_preheat_start = HAL_GetTick(); }
+        else if (!pre)                  s_preheat_active = 0;
+        s_preheat = pre;
     }
 
     now = HAL_GetTick();
+
+    /* Preheat auto-stop: switch it off once it has been on for the configured
+       time (default 60 min). After this the user must toggle preheat off->on on
+       the screen to restart it. */
+    if (s_preheat_active &&
+        (now - s_preheat_start) >= (uint32_t)g_cfg.preheat_timeout_min * 60000U)
+    {
+        s_preheat_active = 0;
+    }
 
     /* Safety 1: communication lost -> heaters OFF (keep fan to purge heat). */
     if ((now - g_last_rx_tick) > COMM_TIMEOUT_MS)
@@ -162,7 +192,7 @@ void Control_Update(void)
     /* Run and preheat both control to the setpoint (requirement #3).
        Per-zone over-temp is checked inside zone_update(); the heating-plate
        sensor (temp3) gives a separate whole-unit over-temp backstop below. */
-    if (s_run == 1 || s_preheat == 1)
+    if (s_run == 1 || s_preheat_active == 1)
     {
         fans_set(FAN_RUN);                                  /* fan must run while heating */
 

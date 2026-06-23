@@ -24,6 +24,7 @@ typedef struct {
     uint32_t res_max_ohm;     /* NTC above this = open  -> zone faults off       */
     int32_t  pi_kp;           /* PI proportional gain (%power per degC error)    */
     int32_t  pi_ki_inc;       /* PI integral increment per cycle (Ki*dt*1000)    */
+    uint16_t preheat_timeout_min; /* preheat auto-stops this many minutes after on */
 } ControlCfg;
 
 extern ControlCfg g_cfg;      /* defaults in control.c; live-tunable in debugger */
