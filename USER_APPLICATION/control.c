@@ -164,12 +164,22 @@ void Control_Update(void)
         fans_set(FAN_RUN);                                  /* fan must run while heating */
 
         /* Plate over-temp backstop (re-added): heating-plate sensor (temp3) too
-           hot -> cut BOTH heaters, keep the fan running to purge heat. Protects
-           the plate/housing. temp3 comes from the screen; an OPEN plate NTC
-           reads ~0 (cold) so this won't false-trip, but it also can't see an
-           over-temp while the plate probe is disconnected. Threshold is
-           g_cfg.plate_temp_max (live-tunable). */
-        if (s_t3 >= g_cfg.plate_temp_max)
+           hot -> cut BOTH heaters, fan keeps purging. Protects the plate/housing.
+
+           FAULT GUARD (important): temp3 is the screen's reading of the plate
+           NTC on PA4 (raw resistance g_Res[2]). If that channel shorts / floats
+           high / has a bad contact, ADC_DRIVE forces g_Res[2]=0 and the screen
+           then reports temp3=129 -- which would FALSE-TRIP this cut and silently
+           block ALL heating every cycle (and temp3 is a background value, not
+           shown on screen, so the fault is invisible). So only believe an
+           over-temp when the raw plate resistance is NON-ZERO (= a real,
+           connected probe). A genuinely hot plate still reads a small but
+           non-zero resistance, so real over-temp still trips. (A true-open plate
+           reads temp3~0 and never trips anyway.) plate_temp_max is live-tunable.
+           NOTE: a hard-shorted/dead plate NTC (g_Res[2] stuck at 0) thus runs
+           WITHOUT plate over-temp protection -- per-zone over-temp + watchdog +
+           the recommended independent hardware cutoff are the backstops then. */
+        if (g_Res[2] != 0 && s_t3 >= g_cfg.plate_temp_max)
         {
             heaters_off();
             s_iterm[0] = s_iterm[1] = 0;
