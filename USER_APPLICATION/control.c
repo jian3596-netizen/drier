@@ -42,7 +42,10 @@ ControlCfg g_cfg = {
     128,      /* plate_temp_max : temp3 >= 128 -> both heaters off (screen alarms at >128) */
     120,      /* hard_temp_max  : per-zone temp1/temp2 over-temp cutoff                     */
     500,      /* res_min_ohm    : NTC short threshold                                       */
-    30000,    /* res_max_ohm    : NTC open  threshold                                       */
+    250000,   /* res_max_ohm    : NTC open threshold. MEASURED: healthy NTC ~46k@room,      */
+              /*                  ~163k@0C; a true open reads ~367k. The old 30000 was WAY  */
+              /*                  too low -> a cold/room-temp probe looked "open" and BOTH  */
+              /*                  zones were force-OFF (the "won't heat from cold" bug).    */
     12,       /* pi_kp                                                                      */
     40        /* pi_ki_inc      : = Ki*dt*1000 (Ki=0.40, dt=0.1s)                           */
 };
