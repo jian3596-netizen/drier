@@ -116,7 +116,7 @@ int main(void)
   __HAL_TIM_SetCompare(&htim1, TIM_CHANNEL_2, 99);
 
   /* UART RX from the screen (idle-DMA) + ADC scan (DMA). */
-  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, st_Uart1.a_Rx_Buf, 300);
+  HAL_UARTEx_ReceiveToIdle_DMA(&huart1, st_Uart1.a_Rx_Buf, sizeof(st_Uart1.a_Rx_Buf));
   HAL_ADC_Start_DMA(&hadc, (uint32_t*)&AD_Buf, AD_Buf_LEN);
 
   /* Start watchdog + control loop state. */

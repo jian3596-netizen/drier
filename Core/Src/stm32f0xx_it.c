@@ -181,7 +181,7 @@ void USART1_IRQHandler(void)
   HAL_UART_IRQHandler(&huart1);
   /* USER CODE BEGIN USART1_IRQn 1 */
 
-	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, st_Uart1.a_Rx_Buf, 300);
+	HAL_UARTEx_ReceiveToIdle_DMA(&huart1, st_Uart1.a_Rx_Buf, sizeof(st_Uart1.a_Rx_Buf));
   /* USER CODE END USART1_IRQn 1 */
 }
 
