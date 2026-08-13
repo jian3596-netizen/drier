@@ -35,6 +35,5 @@ cmake --build --preset release
 
 - 用 DGUS Tool 打开 `SCREEN_APP/DGUS/DWprj.hmi`。
 - 屏幕下载目录为 `SCREEN_APP/DGUS/DWIN_SET/`。
-- `SCREEN_APP/T5L51/` 已保存可读的 8051 源码；它不是单靠 DGUS 页面配置生成的程序。
-
-屏幕程序目前还未完成 SDCC 构建迁移，因此“无需 Keil 的 T5L51 编译”是下一阶段工作，不应把现有 `.uvproj` 误认为 VS Code 能直接编译。
+- `SCREEN_APP/T5L51/` 是屏内 8051 源码，已支持 VS Code + SDCC 构建，无需 Keil。
+- `Ctrl+Shift+B` 选择 **T5L51: Build (SDCC)**，产物为 `SCREEN_APP/T5L51/dist/T5L51.bin`。

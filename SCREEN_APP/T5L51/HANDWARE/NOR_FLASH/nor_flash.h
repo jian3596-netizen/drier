@@ -2,17 +2,17 @@
 #define __NOR_FLASH_H_
 #include "sys.h"
 
-//ºê¶¨Òå
-#define NOR_FLASH_ADDR			0x0008	//ÏµÍ³±äÁ¿µØÖ·
-#define NOR_FLASH_WRITE			0xA5		//½øÐÐÐ´²Ù×÷
-#define NOR_FLASH_READ			0x5A		//½øÐÐ¶Á²Ù×÷
+//å®å®šä¹‰
+#define NOR_FLASH_ADDR			0x0008	//ç³»ç»Ÿå˜é‡åœ°å€
+#define NOR_FLASH_WRITE			0xA5		//è¿›è¡Œå†™æ“ä½œ
+#define NOR_FLASH_READ			0x5A		//è¿›è¡Œè¯»æ“ä½œ
 
-#define CACHE_ADDR					0xFF00	//0XFF00-0XFFFF×÷Îª»º³åÇøÓò,´ó¸ÅÓÐ256¸ö×Ö,512¸ö×Ö½Ú,×¢Òâ,GUI¿ª·¢Ê±²»ÒªÊ¹ÓÃ´ËÇøÓò
-
-
+#define CACHE_ADDR					0xFF00	//0XFF00-0XFFFFä½œä¸ºç¼“å†²åŒºåŸŸ,å¤§æ¦‚æœ‰256ä¸ªå­—,512ä¸ªå­—èŠ‚,æ³¨æ„,GUIå¼€å‘æ—¶ä¸è¦ä½¿ç”¨æ­¤åŒºåŸŸ
 
 
-//º¯ÊýÉêÃ÷
+
+
+//å‡½æ•°ç”³æ˜Ž
 void norflash_write(u32 addr,u8* buff,u16 len);
 void norflash_read(u32 addr,u8* buff,u16 len);
 #endif

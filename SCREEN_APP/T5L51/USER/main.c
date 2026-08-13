@@ -3,7 +3,7 @@
 #include "task.h"
 #include "nor_flash.h"
 
-xdata u16 val;
+T5L_XDATA u16 val;
 
 void main(void)
 {
@@ -13,8 +13,8 @@ void main(void)
 	u16 tu16Temp = 0;
 	u32 Res1, Res2, Res3;
 
-	sys_init();			// ÏµÍ³³õÊ¼»¯
-	uart2_init(115200); // ³õÊ¼»¯´®¿Ú2
+	sys_init();			// ç³»ç»Ÿåˆå§‹åŒ–
+	uart2_init(115200); // åˆå§‹åŒ–ä¸²å£2
 	Temp_Init();
 	Hat_Time = 0;
 
@@ -24,53 +24,33 @@ void main(void)
 	write_page(0);
 	norflash_read(0x000000, (u8 *)&tu32Temp, 2);
 	Set_Hat_Time = tu32Temp;
-	if (Set_Hat_Time < 0)
-	{
-		Set_Hat_Time = 0;
-	}
-	else if (Set_Hat_Time > 600)
+	if (Set_Hat_Time > 600)
 	{
 		Set_Hat_Time = 0;
 	}
 	norflash_read(0x000004, (u8 *)&tu32Temp, 2);
 	Set_Hat_Temp = tu32Temp;
-	if (Set_Hat_Temp < 0)
-	{
-		Set_Hat_Temp = 0;
-	}
-	else if (Set_Hat_Temp > 99)
+	if (Set_Hat_Temp > 99)
 	{
 		Set_Hat_Temp = 99;
 	}
 	norflash_read(0x000008, (u8 *)&tu32Temp, 2);
 	Set_War_Temp = tu32Temp;
-	if (Set_War_Temp < 0)
-	{
-		Set_War_Temp = 0;
-	}
-	else if (Set_War_Temp > 1)
+	if (Set_War_Temp > 1)
 	{
 		Set_War_Temp = 0;
 	}
 
 	norflash_read(0x00000C, (u8 *)&tu32Temp, 2);
 	Set_Temp_xs = tu32Temp;
-	if (Set_Temp_xs < 0)
-	{
-		Set_Temp_xs = 0;
-	}
-	else if (Set_Temp_xs > 1000)
+	if (Set_Temp_xs > 1000)
 	{
 		Set_Temp_xs = 1000;
 	}
 
 	norflash_read(0x000010, (u8 *)&tu32Temp, 2);
 	Set_Temp_xs2 = tu32Temp;
-	if (Set_Temp_xs2 < 0)
-	{
-		Set_Temp_xs2 = 0;
-	}
-	else if (Set_Temp_xs2 > 1000)
+	if (Set_Temp_xs2 > 1000)
 	{
 		Set_Temp_xs2 = 1000;
 	}
@@ -135,7 +115,7 @@ void main(void)
 		{
 			if (Hat_State == 1)
 			{
-				tu16Temp = (u16)(((float)Hat_Time / 6000.0f) + 0.5);
+				tu16Temp = (u16)((Hat_Time + 3000UL) / 6000UL);
 				sys_write_vp(0x2003, (u8 *)&tu16Temp, 1);
 
 				tu16Temp = 100 - ((Hat_Time / 60) / Set_Hat_Time);
@@ -152,14 +132,14 @@ void main(void)
 				sys_write_vp(0x2102, (u8 *)&tu16Temp, 1);
 			}
 		}
-		if (uart2_rx_sta & UART2_PACKET_OK) // ½ÓÊÜµ½ÁË´®¿ÚÊı¾İ°ü
+		if (uart2_rx_sta & UART2_PACKET_OK) // æ¥å—åˆ°äº†ä¸²å£æ•°æ®åŒ…
 		{
-			len = uart2_rx_sta & UART2_PACKET_LEN; // µÃµ½´®¿ÚÊı¾İ°üµÄ³¤¶È,²»°üº¬"\r\n"»òÕß'\n'½áÊø·ûµÄ³¤¶È
-			//			uart2_buf[len++] = 0;//ÔÚÄ©Î²Ìí¼Ó2¸ö¿Õ×Ö·û
+			len = uart2_rx_sta & UART2_PACKET_LEN; // å¾—åˆ°ä¸²å£æ•°æ®åŒ…çš„é•¿åº¦,ä¸åŒ…å«"\r\n"æˆ–è€…'\n'ç»“æŸç¬¦çš„é•¿åº¦
+			//			uart2_buf[len++] = 0;//åœ¨æœ«å°¾æ·»åŠ 2ä¸ªç©ºå­—ç¬¦
 			//			uart2_buf[len++] = 0;
 
-			//			printf("T5L_C51:%s\r\n",uart2_buf);//°Ñ½ÓÊÜµ½µÄÊı¾İ°ü¼ÓÉÏ"T5L_C51:"Ç°×ººó·µ»¹¸ø·¢ËÍÕß
-			//			sys_write_vp(0x2000,uart2_buf,len/2+1);//Í¬Ê±°ÑÊı¾İ°üÏÔÊ¾µ½½çÃæÉÏ
+			//			printf("T5L_C51:%s\r\n",uart2_buf);//æŠŠæ¥å—åˆ°çš„æ•°æ®åŒ…åŠ ä¸Š"T5L_C51:"å‰ç¼€åè¿”è¿˜ç»™å‘é€è€…
+			//			sys_write_vp(0x2000,uart2_buf,len/2+1);//åŒæ—¶æŠŠæ•°æ®åŒ…æ˜¾ç¤ºåˆ°ç•Œé¢ä¸Š
 
 			if (len == 14 && uart2_buf[0] == 0xFA && uart2_buf[13] == 0xAF)
 			{
@@ -181,7 +161,7 @@ void main(void)
 				USART_Send();
 			}
 
-			uart2_rx_sta = 0; // Çå0´ú±í´¦ÀíµôÁË´Ë´®¿Ú°ü
+			uart2_rx_sta = 0; // æ¸…0ä»£è¡¨å¤„ç†æ‰äº†æ­¤ä¸²å£åŒ…
 		}
 		sys_read_vp(0x2004, (u8 *)&Set_Hat_Time, 1);
 		sys_read_vp(0x2005, (u8 *)&Set_Hat_Temp, 1);

@@ -3,28 +3,28 @@
 #include "nor_flash.h"
 
 
-xdata u16 Temp1,Temp2,Temp3;
-xdata u8 Tx_Buf[20];
-xdata u8 Hat_State;
-xdata u8 SW1_State, SW2_State;
-xdata u32 Task_Tick;
-xdata u32 Hat_Time;
-xdata u16 Set_Hat_Time;
-xdata u16 Set_Hat_Temp;
-xdata u16 Set_War_Temp;
-xdata u16 Set_Temp_xs;
-xdata u16 Set_Temp_xs2;
-xdata s32  Write_Flash;
-xdata u16 Set_Hat_Time_old;
-xdata u16 Set_Hat_Temp_old;
-xdata u16 Set_War_Temp_old;
-xdata u16 Set_Temp_xs_old;
-xdata u16 Set_Temp_xs_old2;
+T5L_XDATA u16 Temp1,Temp2,Temp3;
+T5L_XDATA u8 Tx_Buf[20];
+T5L_XDATA u8 Hat_State;
+T5L_XDATA u8 SW1_State, SW2_State;
+T5L_XDATA u32 Task_Tick;
+T5L_XDATA u32 Hat_Time;
+T5L_XDATA u16 Set_Hat_Time;
+T5L_XDATA u16 Set_Hat_Temp;
+T5L_XDATA u16 Set_War_Temp;
+T5L_XDATA u16 Set_Temp_xs;
+T5L_XDATA u16 Set_Temp_xs2;
+T5L_XDATA s32  Write_Flash;
+T5L_XDATA u16 Set_Hat_Time_old;
+T5L_XDATA u16 Set_Hat_Temp_old;
+T5L_XDATA u16 Set_War_Temp_old;
+T5L_XDATA u16 Set_Temp_xs_old;
+T5L_XDATA u16 Set_Temp_xs_old2;
 
 
 
 //50k
-xdata u32 Resistance_table[150];
+T5L_XDATA u32 Resistance_table[150];
 void Temp_Init(void)
 {
 	Resistance_table[0] =     163300,   //0         40
@@ -164,12 +164,12 @@ u16 GET_Temp(u32 Res)
 {
 	u16 Temp_Value = 0;
 	u8 i = 0;
-			for(; i < 130; i++)                 //数据的三种情况，等于，小于和大于
+			for(; i < 130; i++)                 //鏁版嵁鐨勪笁绉嶆儏鍐碉紝绛変簬锛屽皬浜庡拰澶т簬
 			{
 				Temp_Value = i; 
 					if(Res >= Resistance_table[i])
 					{
-//							Temp_Value =  i;               //换算成温度减40
+//							Temp_Value =  i;               //鎹㈢畻鎴愭俯搴﹀噺40
 							break;
 					}
 		}
@@ -183,7 +183,7 @@ u16 GET_Temp(u32 Res)
 //		}
 //		else if(Temp_Value > 60)
 		{
-			Temp_Value *= Set_Temp_xs * 0.01; 
+			Temp_Value = (u16)(((u32)Temp_Value * Set_Temp_xs) / 100UL);
 		}
 		return Temp_Value;
 }

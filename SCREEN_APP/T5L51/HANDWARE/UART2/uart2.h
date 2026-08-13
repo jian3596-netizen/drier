@@ -1,24 +1,24 @@
 #ifndef __UART2_H__
 #define __UART2_H__
 #include "sys.h"
-#include <stdio.h>
 
 
-#define UART2_INT_EN							1				//´®¿ÚÖĞ¶ÏÊÇ·ñÊ¹ÄÜ
-#define UART2_PACKET_OK						0x8000  //ÊÇ·ñ½ÓÊÜµ½ÁËÍêÕûµÄÊı¾İ°ü
-#define UART2_PACKET_LEN					0x7fff	//Êı¾İ°üµÄ³¤¶È
-#define UART2_PACKET_MAX_LEN			100			//¶¨ÒåÁË´®¿Ú°üµÄ×î´ó³¤¶È,²»°üº¬'\n'»ò"\r\n"½áÊø±ê¼ÇÔÚÄÚµÄ
+#define UART2_INT_EN							1				//ä¸²å£ä¸­æ–­æ˜¯å¦ä½¿èƒ½
+#define UART2_PACKET_OK						0x8000  //æ˜¯å¦æ¥å—åˆ°äº†å®Œæ•´çš„æ•°æ®åŒ…
+#define UART2_PACKET_LEN					0x7fff	//æ•°æ®åŒ…çš„é•¿åº¦
+#define UART2_PACKET_MAX_LEN			100			//å®šä¹‰äº†ä¸²å£åŒ…çš„æœ€å¤§é•¿åº¦,ä¸åŒ…å«'\n'æˆ–"\r\n"ç»“æŸæ ‡è®°åœ¨å†…çš„
 
 
 
-//±äÁ¿ÉêÃ÷
-extern xdata u16 uart2_rx_sta;
-extern xdata u8  uart2_buf[];
+//å˜é‡ç”³æ˜
+extern T5L_XDATA u16 uart2_rx_sta;
+extern T5L_XDATA u8  uart2_buf[];
 
-//º¯ÊıÉêÃ÷
+//å‡½æ•°ç”³æ˜
 void uart2_init(u32 baud);
 void u2_send_byte(u8 byte);
 void u2_send_bytes(u8 *bytes,u16 len);
+void uart2_isr(void) T5L_ISR(4);
 
 #endif
 

@@ -2,7 +2,7 @@
 #define __SYS_H__
 #include "t5los8051.h"
 
-//ÀàĞÍÖØ¶¨Òå
+//ç±»å‹é‡å®šä¹‰
 typedef unsigned char   u8;
 typedef unsigned short  u16;
 typedef unsigned long   u32;
@@ -10,19 +10,19 @@ typedef signed char     s8;
 typedef signed short    s16;
 typedef signed long     s32;
 
-//¿´ÃÅ¹·ºê¶¨Òå
-#define	WDT_ON()				MUX_SEL|=0x02		//¿ªÆô¿´ÃÅ¹·
-#define	WDT_OFF()				MUX_SEL&=0xFD		//¹Ø±Õ¿´ÃÅ¹·
-#define	WDT_RST()				MUX_SEL|=0x01		//Î¹¹·
+//çœ‹é—¨ç‹—å®å®šä¹‰
+#define	WDT_ON()				MUX_SEL|=0x02		//å¼€å¯çœ‹é—¨ç‹—
+#define	WDT_OFF()				MUX_SEL&=0xFD		//å…³é—­çœ‹é—¨ç‹—
+#define	WDT_RST()				MUX_SEL|=0x01		//å–‚ç‹—
 
-//ÏµÍ³Ö÷ÆµºÍ1ms¶¨Ê±ÊıÖµ¶¨Òå
+//ç³»ç»Ÿä¸»é¢‘å’Œ1mså®šæ—¶æ•°å€¼å®šä¹‰
 #define FOSC     				206438400UL
 #define T1MS    				(65536-FOSC/12/1000)
 
  
 
 
-//º¯ÊıÉêÃ÷
+//å‡½æ•°ç”³æ˜
 void sys_init(void);
 void sys_delay_about_ms(u16 ms);
 void sys_delay_about_us(u8 us);
@@ -31,6 +31,7 @@ void sys_read_vp(u16 addr,u8* buf,u16 len);
 void sys_write_vp(u16 addr,u8* buf,u16 len);
 void write_page(u8 ID);
 void write_beep(u16 Time);
+void sys_timer2_isr(void) T5L_ISR(5);
 
 #endif
 

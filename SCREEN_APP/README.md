@@ -18,4 +18,20 @@ DGUS Tool 用于编辑页面和生成下载资源。页面控件配置中的 VP 
 - `USER/sys.c`：DGUS VP 等底层调用
 - `USER/template.uvproj`：原始 Keil C51 工程，仅作为现有工程入口和编译参数参考
 
-该源码目前仍使用旧 C51 工具链习惯，尚未完成 SDCC 兼容层和 VS Code 构建脚本。后续迁移时应保留 DGUS API、内存模型和中断声明的行为，并用现有 `DWIN_SET/T5L51.bin` 做尺寸和设备回归对照。
+该源码已经支持 **SDCC 4.6+**，无需安装 Keil。仓库根目录的 VS Code Build Task 会调用 `T5L51/build.ps1`，输出 `T5L51/dist/T5L51.bin`。
+
+首次安装工具链：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File SCREEN_APP/T5L51/setup_sdcc.ps1
+```
+
+命令行构建：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File SCREEN_APP/T5L51/build.ps1
+```
+
+VS Code 中按 `Ctrl+Shift+B`，选择 **T5L51: Build (SDCC)**。若确认要更新烧屏包，选择 **T5L51: Build + update DWIN_SET**；普通 Build 不会覆盖当前已验证的 `DGUS/DWIN_SET/T5L51.bin`。
+
+构建脚本会检查 T5L 特有的 `FF FF DWINT5` 签名、应用入口和 UART2/Timer2 中断向量，并限制映像不超过 32 KiB。

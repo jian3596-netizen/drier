@@ -2,12 +2,12 @@
 #include "task.h"
 
 
-static idata u16 delay_tick = 0; //����ʵ�־�ȷ��ʱ��
-xdata u8 DW_Tx_Buf[10]; 
+static T5L_IDATA u16 delay_tick = 0; //用来实现精确延时的
+T5L_XDATA u8 DW_Tx_Buf[10];
 
 
-//���ļĴ�����ʼ��
-void sys_cpu_init()
+//核心寄存器初始化
+void sys_cpu_init(void)
 {
 	EA = 0;
 	RS0 = 0;
@@ -18,45 +18,45 @@ void sys_cpu_init()
 	DPC = 0x00;
 	PAGESEL = 0x01;
 	D_PAGESEL = 0x02; //DATA RAM  0x8000-0xFFFF
-	MUX_SEL = 0x00;   //UART2,UART3�رգ�WDT�ر�
+	MUX_SEL = 0x00;   //UART2,UART3关闭，WDT关闭
 	RAMMODE = 0x00;
-	PORTDRV = 0x01;   //����ǿ��+/-8mA
-	IEN0 = 0x00;      //�ر������ж�
+	PORTDRV = 0x01;   //驱动强度+/-8mA
+	IEN0 = 0x00;      //关闭所有中断
 	IEN1 = 0x00;
 	IEN2 = 0x00;
-	IP0 = 0x00;       //�ж����ȼ�Ĭ��
+	IP0 = 0x00;       //中断优先级默认
 	IP1 = 0x00;
 
-	WDT_OFF();      	//�رտ��Ź�
+	WDT_OFF();      	//关闭开门狗
 }
 
 
-//��ʱ��2��ʼ��,��ʱ���Ϊ1ms
-void sys_timer2_init()
+//定时器2初始化,定时间隔为1ms
+void sys_timer2_init(void)
 {
 	T2CON = 0x70;
 	TH2 = 0x00;
 	TL2 = 0x00;
 
-	TRL2H = 0xBC;	//1ms�Ķ�ʱ��
+	TRL2H = 0xBC;	//1ms的定时器
 	TRL2L = 0xCD;       
 
-	IEN0 |= 0x20;	//������ʱ��2
+	IEN0 |= 0x20;	//启动定时器2
 	TR2 = 0x01;
 	EA = 1;
 }
 
 
-//ϵͳ��ʼ��
-void sys_init()
+//系统初始化
+void sys_init(void)
 {
-	sys_cpu_init();//���ļĴ�����ʼ��
-	sys_timer2_init();//��ʱ��2��ʼ��
+	sys_cpu_init();//核心寄存器初始化
+	sys_timer2_init();//定时器2初始化
 }
 
 
-//����������ʱ,��λms
-//����޸����Ż��ȼ�,��ô�˺����ڲ��Ĳ�����Ҫ���µ���
+//软件大致延时,单位ms
+//如果修改了优化等级,那么此函数内部的参数需要重新调试
 void sys_delay_about_ms(u16 ms)
 {
 	u16 i,j;
@@ -65,8 +65,8 @@ void sys_delay_about_ms(u16 ms)
 }
 
 
-//����������ʱ,��λus
-//����޸����Ż��ȼ�,��ô�˺����ڲ��Ĳ�����Ҫ���µ���
+//软件大致延时,单位us
+//如果修改了优化等级,那么此函数内部的参数需要重新调试
 void sys_delay_about_us(u8 us)
 {
 	u8 i,j;
@@ -75,7 +75,7 @@ void sys_delay_about_us(u8 us)
 }
 
 
-//���ö�ʱ��2���о�ȷ��ʱ,��λms
+//利用定时器2进行精确延时,单位ms
 void sys_delay_ms(u16 ms)
 {
 	delay_tick = ms;
@@ -83,10 +83,10 @@ void sys_delay_ms(u16 ms)
 }
 
 
-//��DGUS�е�VP��������
-//addr:����ֱ�Ӵ���DGUS�еĵ�ַ
-//buf:������
-//len:��ȡ������,һ���ֵ���2���ֽ�
+//读DGUS中的VP变量数据
+//addr:就是直接传入DGUS中的地址
+//buf:缓冲区
+//len:读取的字数,一个字等于2个字节
 void sys_read_vp(u16 addr,u8* buf,u16 len)
 {   
 	u8 i; 
@@ -122,10 +122,10 @@ void sys_read_vp(u16 addr,u8* buf,u16 len)
 }
 
 
-//дDGUS�е�VP��������
-//addr:����ֱ�Ӵ���DGUS�еĵ�ַ
-//buf:������
-//len:���������ݵ�����,һ���ֵ���2���ֽ�
+//写DGUS中的VP变量数据
+//addr:就是直接传入DGUS中的地址
+//buf:缓冲区
+//len:被发送数据的字数,一个字等于2个字节
 void sys_write_vp(u16 addr,u8* buf,u16 len)
 {   
 	u8 i;  
@@ -184,12 +184,12 @@ void write_beep(u16 Time)
 	
 }
 
-//��ʱ��2�жϷ������
-void sys_timer2_isr()	interrupt 5
+//定时器2中断服务程序
+void sys_timer2_isr(void) T5L_ISR(5)
 {
-	TF2=0;//�����ʱ��2���жϱ�־λ
+	TF2=0;//清除定时器2的中断标志位
 	
-	//��׼��ʱ����
+	//精准延时处理
 	if(delay_tick)
 		delay_tick--;
 	
