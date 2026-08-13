@@ -48,6 +48,20 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
+  /* Hold both inverted fan-control pins HIGH (OFF) from the earliest GPIO
+     initialization until TIM3 takes ownership of them. */
+  HAL_GPIO_WritePin(FAN1_GPIO_Port, FAN1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(FAN2_GPIO_Port, FAN2_Pin, GPIO_PIN_SET);
+
+  GPIO_InitStruct.Pin = FAN1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(FAN1_GPIO_Port, &GPIO_InitStruct);
+
+  GPIO_InitStruct.Pin = FAN2_Pin;
+  HAL_GPIO_Init(FAN2_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
 

@@ -9,6 +9,7 @@
   #define T5L_XDATA __xdata
   #define T5L_IDATA __idata
   #define T5L_CODE  __code
+  #define T5L_VOLATILE volatile
   #define T5L_SFR(name, address) __sfr __at(address) name
   #define T5L_SBIT(name, address) __sbit __at(address) name
   #define T5L_ISR(vector) __interrupt(vector)
@@ -16,6 +17,7 @@
   #define T5L_XDATA xdata
   #define T5L_IDATA idata
   #define T5L_CODE  code
+  #define T5L_VOLATILE volatile
   #define T5L_SFR(name, address) sfr name = address
   #define T5L_SBIT(name, address) sbit name = address
   #define T5L_ISR(vector) interrupt vector

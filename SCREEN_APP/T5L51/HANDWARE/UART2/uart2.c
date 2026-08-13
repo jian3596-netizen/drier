@@ -2,9 +2,8 @@
 
 
 #if(UART2_INT_EN)
-T5L_XDATA u16 uart2_rx_sta;//bit15用于标志是否已接受到一个完整的数据包,bit[14:0]用于存储当前数据包的长度
+T5L_XDATA T5L_VOLATILE u16 uart2_rx_sta;//bit15用于标志是否已接受到一个完整的数据包,bit[14:0]用于存储当前数据包的长度
 T5L_XDATA u8  uart2_buf[UART2_PACKET_MAX_LEN+2];//留2个空字符的位置
-T5L_XDATA u8  uart2_step;
 
 //串口2中断服务程序
 //发送数据时,必须关闭中断,这里只负责处理接受中断
@@ -20,26 +19,32 @@ void uart2_isr(void) T5L_ISR(4)
 		if(uart2_rx_sta&UART2_PACKET_OK)//接收好的数据还未被处理
 			return;
 	
-		if(uart2_step==0)//接受数据的过程
+		/* Frames contain binary resistance bytes, so 0x0A/0x0D may legally
+		 * occur inside their payload and cannot be used as delimiters. Resync
+		 * on FA/FB and complete by the frame header:
+		 * normal resistance frame = 14 bytes; stop command = 4 bytes. */
+		if(uart2_rx_sta == 0)
 		{
-			if(res=='\r')//如果接受到了"\r\n"结束标记,认为数据包接受完成
-				uart2_step = 1;//进入接受'\n'标记的过程
-			else if(res=='\n')//如果接受到了'\n'结束标记,也认为数据包接受完成
-				uart2_rx_sta |= UART2_PACKET_OK;//标记数据包接受完成
-			else//接受数据
-			{
-				if(uart2_rx_sta>=UART2_PACKET_MAX_LEN)
-					uart2_rx_sta = 0;//数据超量了,丢弃掉,重头开始接收
+			if(res == 0xFA || res == 0xFB)
+				uart2_buf[uart2_rx_sta++] = res;
+		}
+		else
+		{
+			uart2_buf[uart2_rx_sta++] = res;
 
-				uart2_buf[uart2_rx_sta++] = res;//存储有效数据
+			if((uart2_rx_sta == 4 && uart2_buf[0] == 0xFB) ||
+			   (uart2_rx_sta == 14 && uart2_buf[0] == 0xFA))
+			{
+				if((uart2_buf[0] == 0xFA && uart2_buf[13] == 0xAF) ||
+				   (uart2_buf[0] == 0xFB && uart2_buf[3] == 0xBF))
+					uart2_rx_sta |= UART2_PACKET_OK;
+				else
+					uart2_rx_sta = 0;
 			}
-		}else if(uart2_step==1)//判断结束标记的过程
-		{
-			uart2_step = 0;
-			if(res=='\n')
-				uart2_rx_sta |= UART2_PACKET_OK;//标记数据包接受完成
-			else
-				uart2_rx_sta = 0;//'\r'的下一个字符不是'\n',认为接受错误,重头开始接收
+			else if(uart2_rx_sta >= UART2_PACKET_MAX_LEN)
+			{
+				uart2_rx_sta = 0;
+			}
 		}
 		
 	}	
@@ -67,11 +72,21 @@ void uart2_init(u32 baud)
 		EA = 1;
 		//xdata变量都得在函数中初始化
 		uart2_rx_sta = 0;
-		uart2_step = 0;
 	#else
 		ES0 = 0;
 	#endif
 
+}
+
+void uart2_release_packet(void)
+{
+	#if(UART2_INT_EN)
+		ES0 = 0;
+	#endif
+	uart2_rx_sta = 0;
+	#if(UART2_INT_EN)
+		ES0 = 1;
+	#endif
 }
 
 //发送一个字节

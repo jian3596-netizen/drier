@@ -7,14 +7,14 @@ T5L_XDATA u16 Temp1,Temp2,Temp3;
 T5L_XDATA u8 Tx_Buf[20];
 T5L_XDATA u8 Hat_State;
 T5L_XDATA u8 SW1_State, SW2_State;
-T5L_XDATA u32 Task_Tick;
-T5L_XDATA u32 Hat_Time;
+T5L_XDATA T5L_VOLATILE u32 Task_Tick;
+T5L_XDATA T5L_VOLATILE u32 Hat_Time;
 T5L_XDATA u16 Set_Hat_Time;
 T5L_XDATA u16 Set_Hat_Temp;
 T5L_XDATA u16 Set_War_Temp;
 T5L_XDATA u16 Set_Temp_xs;
 T5L_XDATA u16 Set_Temp_xs2;
-T5L_XDATA s32  Write_Flash;
+T5L_XDATA T5L_VOLATILE s32  Write_Flash;
 T5L_XDATA u16 Set_Hat_Time_old;
 T5L_XDATA u16 Set_Hat_Temp_old;
 T5L_XDATA u16 Set_War_Temp_old;
@@ -160,7 +160,7 @@ void Temp_Init(void)
  	Resistance_table[130] =        1367 ;   //99        139
 }
 
-u16 GET_Temp(u32 Res)
+u16 GET_Temp_Calibrated(u32 Res, u16 scale)
 {
 	u16 Temp_Value = 0;
 	u8 i = 0;
@@ -183,9 +183,14 @@ u16 GET_Temp(u32 Res)
 //		}
 //		else if(Temp_Value > 60)
 		{
-			Temp_Value = (u16)(((u32)Temp_Value * Set_Temp_xs) / 100UL);
+			Temp_Value = (u16)(((u32)Temp_Value * scale) / 100UL);
 		}
 		return Temp_Value;
+}
+
+u16 GET_Temp(u32 Res)
+{
+	return GET_Temp_Calibrated(Res, Set_Temp_xs);
 }
 
 

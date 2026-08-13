@@ -2,7 +2,7 @@
 #include "task.h"
 
 
-static T5L_IDATA u16 delay_tick = 0; //用来实现精确延时的
+static T5L_IDATA T5L_VOLATILE u16 delay_tick = 0; //用来实现精确延时的
 T5L_XDATA u8 DW_Tx_Buf[10];
 
 
@@ -165,6 +165,44 @@ void sys_write_vp(u16 addr,u8* buf,u16 len)
 	}
 	RAMMODE = 0x00;
 } 
+
+/* DGUS words are always big-endian. Keil C51 stores multi-byte integers in
+ * that order, but SDCC stores them little-endian. Keep the raw byte-buffer
+ * API above for protocol commands and use these typed helpers for integers. */
+void sys_read_vp_u16(u16 addr, u16 *value)
+{
+	u8 bytes[2];
+	sys_read_vp(addr, bytes, 1);
+	*value = ((u16)bytes[0] << 8) | (u16)bytes[1];
+}
+
+void sys_write_vp_u16(u16 addr, u16 value)
+{
+	u8 bytes[2];
+	bytes[0] = (u8)(value >> 8);
+	bytes[1] = (u8)value;
+	sys_write_vp(addr, bytes, 1);
+}
+
+void sys_read_vp_u32(u16 addr, u32 *value)
+{
+	u8 bytes[4];
+	sys_read_vp(addr, bytes, 2);
+	*value = ((u32)bytes[0] << 24) |
+			 ((u32)bytes[1] << 16) |
+			 ((u32)bytes[2] << 8) |
+			 (u32)bytes[3];
+}
+
+void sys_write_vp_u32(u16 addr, u32 value)
+{
+	u8 bytes[4];
+	bytes[0] = (u8)(value >> 24);
+	bytes[1] = (u8)(value >> 16);
+	bytes[2] = (u8)(value >> 8);
+	bytes[3] = (u8)value;
+	sys_write_vp(addr, bytes, 2);
+}
 
 
 void write_page(u8 ID)

@@ -31,7 +31,7 @@ void norflash_write(u32 addr,u8* buff,u16 len)
 		sys_read_vp(NOR_FLASH_ADDR,norflash_cmd,2);//只需读取0x0008变量的前2个字,然后判断D7是否为0
 		if(norflash_cmd[0]==0)
 			break;
-		sys_delay_about_ms(1);//这个延时必须加,可以防止莫名其妙的错误
+		sys_delay_ms(1);//这个延时必须加,可以防止莫名其妙的错误
 	}
 }
 
@@ -60,11 +60,33 @@ void norflash_read(u32 addr,u8* buff,u16 len)
 		sys_read_vp(NOR_FLASH_ADDR,norflash_cmd,2);//只需读取0x0008变量的前4个字节,然后判断D7是否为0
 		if(norflash_cmd[0]==0)
 			break;
-		sys_delay_about_ms(1);//这个延时必须加,可以防止莫名其妙的错误
+		sys_delay_ms(1);//这个延时必须加,可以防止莫名其妙的错误
 	}
 	
 	//3.再把CACHE_ADDR处的数据读取到buff中
 	sys_read_vp(CACHE_ADDR,buff,len);
+}
+
+/* Persistent integers use the same big-endian representation as the original
+ * Keil C51 firmware, independent of the compiler's native byte order. */
+void norflash_write_u32(u32 addr, u32 value)
+{
+	u8 bytes[4];
+	bytes[0] = (u8)(value >> 24);
+	bytes[1] = (u8)(value >> 16);
+	bytes[2] = (u8)(value >> 8);
+	bytes[3] = (u8)value;
+	norflash_write(addr, bytes, 2);
+}
+
+void norflash_read_u32(u32 addr, u32 *value)
+{
+	u8 bytes[4];
+	norflash_read(addr, bytes, 2);
+	*value = ((u32)bytes[0] << 24) |
+			 ((u32)bytes[1] << 16) |
+			 ((u32)bytes[2] << 8) |
+			 (u32)bytes[3];
 }
 
 

@@ -68,6 +68,7 @@ static uint8_t  s_preheat_active = 0;
 static uint8_t  s_preheat_seen   = 0;   /* first screen packet adopted yet?      */
 static uint8_t  s_preheat_stop_pending = 0; /* ask screen to clear VP 0x2006       */
 static uint32_t s_preheat_start  = 0;   /* HAL tick when preheat was switched on  */
+static uint8_t  s_fan_purge_required = 0; /* remains clear until heating has run    */
 
 /* Heater PWM is INVERTED: compare 0 = full power, 99 = OFF. pct in 0..100. */
 static void heater_pwm(TIM_HandleTypeDef *htim, uint32_t ch, int32_t pct)
@@ -141,6 +142,14 @@ void Control_Init(void)
     IWDG->KR  = 0x0000CCCC;   /* start (also turns LSI on) */
 
     s_iterm[0] = s_iterm[1] = 0;
+    s_run = 0;
+    s_preheat = 0;
+    s_preheat_active = 0;
+    s_preheat_seen = 0;
+    s_preheat_stop_pending = 0;
+    s_fan_purge_required = 0;
+    heaters_off();
+    fans_set(FAN_STOP);
 
 }
 
@@ -194,11 +203,12 @@ void Control_Update(void)
         s_preheat_stop_pending = 1;
     }
 
-    /* Safety 1: communication lost -> heaters OFF (keep fan to purge heat). */
+    /* Safety 1: communication lost -> heaters OFF. Purge only if this boot has
+       actually heated; a cold power-on with no screen traffic keeps fans OFF. */
     if ((now - g_last_rx_tick) > COMM_TIMEOUT_MS)
     {
         heaters_off();
-        fans_set(FAN_RUN);
+        fans_set(s_fan_purge_required ? FAN_RUN : FAN_STOP);
         s_iterm[0] = s_iterm[1] = 0;
         return;
     }
@@ -208,6 +218,7 @@ void Control_Update(void)
        sensor (temp3) gives a separate whole-unit over-temp backstop below. */
     if (s_run == 1 || s_preheat_active == 1)
     {
+        s_fan_purge_required = 1;
         fans_set(FAN_RUN);                                  /* fan must run while heating */
 
         /* Plate over-temp backstop (re-added): heating-plate sensor (temp3) too

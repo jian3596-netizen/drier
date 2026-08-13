@@ -102,10 +102,10 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
   /* Fans on TIM3 CH2/CH4 (PA7/PB1) -- start stopped (100 = off). */
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
-  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_2, 100);
   __HAL_TIM_SetCompare(&htim3, TIM_CHANNEL_4, 100);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_2);
+  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_4);
 
   /* Heater 1 on TIM16 CH1 (PA6) -- start OFF (99 = off). */
   HAL_TIM_PWM_Start(&htim16, TIM_CHANNEL_1);

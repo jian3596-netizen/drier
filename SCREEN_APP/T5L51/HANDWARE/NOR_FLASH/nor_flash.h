@@ -1,5 +1,5 @@
 #ifndef __NOR_FLASH_H__
-#define __NOR_FLASH_H_
+#define __NOR_FLASH_H__
 #include "sys.h"
 
 //宏定义
@@ -15,5 +15,7 @@
 //函数申明
 void norflash_write(u32 addr,u8* buff,u16 len);
 void norflash_read(u32 addr,u8* buff,u16 len);
+void norflash_write_u32(u32 addr, u32 value);
+void norflash_read_u32(u32 addr, u32 *value);
 #endif
 

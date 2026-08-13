@@ -3,6 +3,6 @@
 
 #include "main.h"
 
-void DWIN_Send(void);   /* send NTC resistances + forced preheat-stop request */
+void DWIN_Send(void);   /* send NTC resistances or a forced preheat-stop command */
 
 #endif /* __DWIN_DRIVE_H */
