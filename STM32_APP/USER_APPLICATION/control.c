@@ -66,6 +66,7 @@ static int32_t  s_iterm[2] = {0, 0};
    boot even if the screen flag is already on, and (b) auto-stops on a timer. */
 static uint8_t  s_preheat_active = 0;
 static uint8_t  s_preheat_seen   = 0;   /* first screen packet adopted yet?      */
+static uint8_t  s_preheat_stop_pending = 0; /* ask screen to clear VP 0x2006       */
 static uint32_t s_preheat_start  = 0;   /* HAL tick when preheat was switched on  */
 
 /* Heater PWM is INVERTED: compare 0 = full power, 99 = OFF. pct in 0..100. */
@@ -143,6 +144,11 @@ void Control_Init(void)
 
 }
 
+uint8_t Control_PreheatStopPending(void)
+{
+    return s_preheat_stop_pending;
+}
+
 void Control_Update(void)
 {
     uint32_t now;
@@ -167,6 +173,12 @@ void Control_Update(void)
         if (!s_preheat_seen)            s_preheat_seen = 1;
         else if (pre && !s_preheat)   { s_preheat_active = 1; s_preheat_start = HAL_GetTick(); }
         else if (!pre)                  s_preheat_active = 0;
+
+        /* A zero preheat flag is also the screen's acknowledgement that it
+           applied our forced-stop request to DGUS VP 0x2006. Keep sending the
+           request until this acknowledgement arrives, so one lost frame cannot
+           leave the panel showing preheat ON after the heater has stopped. */
+        if (!pre)                       s_preheat_stop_pending = 0;
         s_preheat = pre;
     }
 
@@ -179,6 +191,7 @@ void Control_Update(void)
         (now - s_preheat_start) >= (uint32_t)g_cfg.preheat_timeout_min * 60000U)
     {
         s_preheat_active = 0;
+        s_preheat_stop_pending = 1;
     }
 
     /* Safety 1: communication lost -> heaters OFF (keep fan to purge heat). */

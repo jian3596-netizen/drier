@@ -3,6 +3,6 @@
 
 #include "main.h"
 
-void DWIN_Send(void);   /* send the 3 NTC resistances to the DWIN screen */
+void DWIN_Send(void);   /* send NTC resistances + forced preheat-stop request */
 
 #endif /* __DWIN_DRIVE_H */

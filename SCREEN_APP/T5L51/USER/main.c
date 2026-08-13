@@ -141,7 +141,12 @@ void main(void)
 			//			printf("T5L_C51:%s\r\n",uart2_buf);//把接受到的数据包加上"T5L_C51:"前缀后返还给发送者
 			//			sys_write_vp(0x2000,uart2_buf,len/2+1);//同时把数据包显示到界面上
 
-			if (len == 14 && uart2_buf[0] == 0xFA && uart2_buf[13] == 0xAF)
+			/* Accept the former 14-byte frame as well as the new 15-byte frame.
+			 * New byte 13 is a reliable STM32 request to clear preheat VP 0x2006;
+			 * the following USART_Send() returns Set_War_Temp=0 as acknowledgement. */
+			if (((len == 14 && uart2_buf[13] == 0xAF) ||
+				 (len == 15 && uart2_buf[14] == 0xAF)) &&
+				uart2_buf[0] == 0xFA)
 			{
 				Res1 = (u32)((u32)uart2_buf[1] << 24) + (u32)((u32)uart2_buf[2] << 16) + (u32)((u32)uart2_buf[3] << 8) + uart2_buf[4];
 				Res2 = (u32)((u32)uart2_buf[5] << 24) + (u32)((u32)uart2_buf[6] << 16) + (u32)((u32)uart2_buf[7] << 8) + uart2_buf[8];
@@ -157,6 +162,12 @@ void main(void)
 				//				sys_write_vp(0x8002,(u8*)&Res2,2);
 				SW1_State = uart2_buf[9];
 				SW2_State = uart2_buf[10];
+
+				if (len == 15 && uart2_buf[13] != 0)
+				{
+					Set_War_Temp = 0;
+					sys_write_vp(0x2006, (u8 *)&Set_War_Temp, 1);
+				}
 
 				USART_Send();
 			}

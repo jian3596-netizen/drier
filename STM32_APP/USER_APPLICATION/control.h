@@ -31,5 +31,6 @@ extern ControlCfg g_cfg;      /* defaults in control.c; live-tunable in debugger
 
 void Control_Init(void);    /* call once after peripherals are up (starts IWDG) */
 void Control_Update(void);  /* call every main-loop cycle (~100 ms)             */
+uint8_t Control_PreheatStopPending(void); /* nonzero until screen confirms VP 2006 = 0 */
 
 #endif /* __CONTROL_H */
