@@ -140,6 +140,7 @@ void Control_Init(void)
     IWDG->KR  = 0x0000CCCC;   /* start (also turns LSI on) */
 
     s_iterm[0] = s_iterm[1] = 0;
+
 }
 
 void Control_Update(void)

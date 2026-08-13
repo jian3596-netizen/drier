@@ -1,14 +1,24 @@
-# 构建产物
+# 临时分析文件
+/.temp/
+/tmp/
+
+# STM32 CMake 构建产物
 /build/
-*.elf
-*.hex
-*.bin
-*.map
+/STM32_APP/build/
+/STM32_APP/compile_commands.json
+
+# T5L51 编译器与 IDE 生成文件
+/SCREEN_APP/T5L51/OBJ/
+/SCREEN_APP/T5L51/USER/.vscode/
+/SCREEN_APP/T5L51/USER/*.uvgui.*
+/SCREEN_APP/T5L51/USER/*.uvopt
 
 # 编辑器 / 工具缓存
 .cache/
-compile_commands.json
 
-# 系统
+# 系统文件
 Thumbs.db
 .DS_Store
+
+# 注意：不要全局忽略 *.bin / *.hex。
+# SCREEN_APP/DGUS/DWIN_SET 中的二进制文件是屏幕下载包的一部分。

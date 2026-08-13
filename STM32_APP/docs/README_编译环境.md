@@ -1,7 +1,7 @@
 # STM32 控制板固件 — VSCode + CMake 编译环境说明
 
 > 纯 VSCode、无 Keil 的编译/烧录环境。芯片 **STM32F030F4P6**（Cortex-M0, 16KB Flash / 4KB RAM）。
-> 屏(DWIN)是独立模块，不在本工程内；本工程只管 **STM32 控制固件**。
+> 屏(DWIN)是同一仓库中的独立模块，位于 `../../SCREEN_APP/`；本目录只管 **STM32 控制固件**。
 
 ---
 
@@ -29,7 +29,7 @@
 ## 二、怎么编译
 
 ### 方式1：图形界面（推荐新手）
-1. VSCode **打开文件夹** `1_STM32固件_控制板`（注意是打开这个文件夹本身）。
+1. VSCode **打开仓库根目录**；根目录 `.vscode/settings.json` 会把 CMake 源目录设为 `STM32_APP`。
 2. 右下角弹窗提示装推荐扩展 → 全装。
 3. CMake Tools 会自动读 `CMakePresets.json`，底部状态栏选 **debug** 预设。
 4. 点状态栏的 **Build**（或按 F7）。
@@ -65,7 +65,7 @@ cmake --build --preset debug
 |---|---|
 | 找不到 `arm-none-eabi-gcc` | 没进 PATH。改 `cmake/gcc-arm-none-eabi.cmake` 的 `TOOLCHAIN_PREFIX` 为绝对路径 |
 | 找不到 `ninja` | 没装 ninja，或把 `CMakePresets.json` 的 `"generator"` 改成 `"MinGW Makefiles"` 等 |
-| 中文注释乱码 | 源码是 GBK；`.vscode/settings.json` 已设 `files.encoding=gbk`，重开文件即可 |
+| 屏端中文注释乱码 | 根目录已开启 `files.autoGuessEncoding`；若个别旧文件识别失败，在 VS Code 状态栏用“以编码重新打开”选择 GBK |
 | 链接报 `region FLASH overflowed` | 代码超 16KB。检查是否误开了 `-O0`/调试信息进了 Flash（Release 用 `-Os`）|
 | F5 连不上 J-Link | 检查 SWD 接线、供电；确认装了 J-Link 软件包；`launch.json` 的 device 名 |
 
@@ -78,7 +78,7 @@ cmake --build --preset debug
 | `CMakePresets.json` | 一键配置（debug/release 预设） |
 | `cmake/gcc-arm-none-eabi.cmake` | GCC 交叉编译工具链定义 |
 | `STM32F030F4Px_FLASH.ld` | 链接脚本（16KB Flash / 4KB RAM 内存布局）|
-| `.vscode/` | 扩展推荐、CMake 设置、J-Link 调试配置 |
-| `.gitignore` | 忽略 build 产物 |
+| `../.vscode/` | 仓库级扩展推荐、CMake 设置、J-Link 调试配置 |
+| `../.gitignore` | 忽略 build 产物，同时保留屏幕下载包中的二进制文件 |
 
-> 这套是手写的（等价于 CubeMX 选 CMake 生成的结果），所以你**不装 CubeMX 也能编译**。以后若要改引脚/外设配置，再用 CubeMX 打开根目录的 `HGJ.ioc` 即可。
+> 这套是手写的（等价于 CubeMX 选 CMake 生成的结果），所以你**不装 CubeMX 也能编译**。以后若要改引脚/外设配置，再用 CubeMX 打开 `STM32_APP/HGJ.ioc` 即可。
