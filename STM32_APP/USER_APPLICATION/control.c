@@ -37,9 +37,9 @@
  *    pi_kp          : PI proportional gain, %power per degC of error.
  *    pi_ki_inc      : PI integral increment per cycle = Ki*dt*1000
  *                     (Ki=0.40, dt=0.1s -> 40). Integral term is scaled x1000.
- *    preheat_timeout_min : preheat auto-stops this many minutes after the user
- *                     switches it on (default 60). Live-tunable -- set it to 1
- *                     in the debugger to test the auto-stop quickly.
+ *    preheat_timeout_min : preheat auto-stops after this many CONTINUOUS idle
+ *                     minutes (default 60). A drying run resets the idle timer.
+ *                     Live-tunable -- set it to 1 for a quick bench test.
  * ------------------------------------------------------------------------- */
 ControlCfg g_cfg = {
     128,      /* plate_temp_max : temp3 >= 128 -> both heaters off (screen alarms at >128) */
@@ -51,7 +51,7 @@ ControlCfg g_cfg = {
               /*                  zones were force-OFF (the "won't heat from cold" bug).    */
     12,       /* pi_kp                                                                      */
     40,       /* pi_ki_inc      : = Ki*dt*1000 (Ki=0.40, dt=0.1s)                           */
-    60        /* preheat_timeout_min : preheat auto-stops 60 min after switched on          */
+    60        /* preheat_timeout_min : auto-stop after 60 continuous idle minutes           */
 };
 
 /* Latched screen state + per-zone integral term (scaled x1000) */
@@ -67,7 +67,7 @@ static int32_t  s_iterm[2] = {0, 0};
 static uint8_t  s_preheat_active = 0;
 static uint8_t  s_preheat_seen   = 0;   /* first screen packet adopted yet?      */
 static uint8_t  s_preheat_stop_pending = 0; /* ask screen to clear VP 0x2006       */
-static uint32_t s_preheat_start  = 0;   /* HAL tick when preheat was switched on  */
+static uint32_t s_preheat_start  = 0;   /* HAL tick when current idle period began */
 static uint8_t  s_fan_purge_required = 0; /* remains clear until heating has run    */
 
 /* Heater PWM is INVERTED: compare 0 = full power, 99 = OFF. pct in 0..100. */
@@ -193,11 +193,15 @@ void Control_Update(void)
 
     now = HAL_GetTick();
 
-    /* Preheat auto-stop: switch it off once it has been on for the configured
-       time (default 60 min). After this the user must toggle preheat off->on on
-       the screen to restart it. */
-    if (s_preheat_active &&
-        (now - s_preheat_start) >= (uint32_t)g_cfg.preheat_timeout_min * 60000U)
+    /* Count only continuous standby time. While a drying cycle is running,
+       continuously move the baseline forward; when the cycle ends, the full
+       timeout starts again from zero. */
+    if (s_preheat_active && s_run == 1)
+    {
+        s_preheat_start = now;
+    }
+    else if (s_preheat_active &&
+             (now - s_preheat_start) >= (uint32_t)g_cfg.preheat_timeout_min * 60000U)
     {
         s_preheat_active = 0;
         s_preheat_stop_pending = 1;
