@@ -16,6 +16,7 @@
 #define COMM_TIMEOUT_MS   1000U   /* no valid screen packet within this -> heaters OFF        */
 #define FAN_RUN              0U   /* fan PWM while heating (inverted: 0 = full, 100 = off)    */
 #define FAN_STOP           100U   /* fan PWM when stopped                                     */
+#define HEATER_MAX_POWER_PCT 90   /* cap both heater outputs to limit input current          */
 #define ITERM_LIMIT     100000    /* clamp on scaled integral term (= 100% * 1000)           */
 
 /* ---------------------------------------------------------------------------
@@ -70,13 +71,13 @@ static uint8_t  s_preheat_stop_pending = 0; /* ask screen to clear VP 0x2006    
 static uint32_t s_preheat_start  = 0;   /* HAL tick when current idle period began */
 static uint8_t  s_fan_purge_required = 0; /* remains clear until heating has run    */
 
-/* Heater PWM is INVERTED: compare 0 = full power, 99 = OFF. pct in 0..100. */
+/* Heater PWM is INVERTED: period is 100 ticks; compare 10 = 90% power. */
 static void heater_pwm(TIM_HandleTypeDef *htim, uint32_t ch, int32_t pct)
 {
     uint16_t cmp;
     if (pct < 0)   pct = 0;
-    if (pct > 100) pct = 100;
-    cmp = (uint16_t)((100 - pct) * 99 / 100);   /* 100% -> 0 (full), 0% -> 99 (off) */
+    if (pct > HEATER_MAX_POWER_PCT) pct = HEATER_MAX_POWER_PCT;
+    cmp = pct == 0 ? 99U : (uint16_t)(100 - pct);
     __HAL_TIM_SetCompare(htim, ch, cmp);
 }
 
@@ -98,19 +99,19 @@ static uint8_t sensor_fault(uint32_t res_ohm)
     return (res_ohm < g_cfg.res_min_ohm || res_ohm > g_cfg.res_max_ohm) ? 1 : 0;
 }
 
-/* Integer PI (per zone) with clamping anti-windup. Returns 0..100 %. */
+/* Integer PI (per zone) with clamping anti-windup. Returns 0..90 %. */
 static int32_t pi_update(uint8_t z, int32_t setpoint, int32_t meas)
 {
     int32_t err = setpoint - meas;
     int32_t out = g_cfg.pi_kp * err + s_iterm[z] / 1000;
-    if (out > 0 && out < 100)             /* integrate only when not saturated */
+    if (out > 0 && out < HEATER_MAX_POWER_PCT) /* integrate only when not saturated */
     {
         s_iterm[z] += g_cfg.pi_ki_inc * err;
         if (s_iterm[z] >  ITERM_LIMIT) s_iterm[z] =  ITERM_LIMIT;
         if (s_iterm[z] < -ITERM_LIMIT) s_iterm[z] = -ITERM_LIMIT;
         out = g_cfg.pi_kp * err + s_iterm[z] / 1000;
     }
-    if (out > 100) out = 100;
+    if (out > HEATER_MAX_POWER_PCT) out = HEATER_MAX_POWER_PCT;
     if (out < 0)   out = 0;
     return out;
 }
