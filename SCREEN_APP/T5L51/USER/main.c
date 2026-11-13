@@ -8,23 +8,37 @@ T5L_XDATA u16 val;
 #define SETTINGS_VERSION_ADDR 0x000014UL
 #define SETTINGS_VERSION      0x44525901UL
 
-#define DEFAULT_HAT_TIME_MIN  10U
+#define DEFAULT_HAT_TIME_TENTH_MIN 10U
 #define DEFAULT_HAT_TEMP_C    60U
 #define DEFAULT_WARM_ENABLE   0U
 #define DEFAULT_TEMP_SCALE    100U
+#define MIN_HAT_TIME_TENTH_MIN 10U
+#define MAX_HAT_TIME_TENTH_MIN 600U
+#define MIN_HAT_TEMP_C 30U
+#define MAX_HAT_TEMP_C 90U
 
 static u8 sanitize_settings(void)
 {
 	u8 changed = 0;
 
-	if (Set_Hat_Time > 600)
+	if (Set_Hat_Time < MIN_HAT_TIME_TENTH_MIN)
 	{
-		Set_Hat_Time = 0;
+		Set_Hat_Time = MIN_HAT_TIME_TENTH_MIN;
 		changed = 1;
 	}
-	if (Set_Hat_Temp > 99)
+	else if (Set_Hat_Time > MAX_HAT_TIME_TENTH_MIN)
 	{
-		Set_Hat_Temp = 0;
+		Set_Hat_Time = MAX_HAT_TIME_TENTH_MIN;
+		changed = 1;
+	}
+	if (Set_Hat_Temp < MIN_HAT_TEMP_C)
+	{
+		Set_Hat_Temp = MIN_HAT_TEMP_C;
+		changed = 1;
+	}
+	else if (Set_Hat_Temp > MAX_HAT_TEMP_C)
+	{
+		Set_Hat_Temp = MAX_HAT_TEMP_C;
 		changed = 1;
 	}
 	if (Set_War_Temp > 1)
@@ -48,7 +62,7 @@ static u8 sanitize_settings(void)
 
 static void set_default_settings(void)
 {
-	Set_Hat_Time = DEFAULT_HAT_TIME_MIN;
+	Set_Hat_Time = DEFAULT_HAT_TIME_TENTH_MIN;
 	Set_Hat_Temp = DEFAULT_HAT_TEMP_C;
 	Set_War_Temp = DEFAULT_WARM_ENABLE;
 	Set_Temp_xs = DEFAULT_TEMP_SCALE;
@@ -82,6 +96,8 @@ void main(void)
 	u16 btn_val;
 	u32 tu32Temp = 0;
 	u16 tu16Temp = 0;
+	u16 input_time;
+	u16 input_temp;
 	u8 settings_changed = 0;
 	u32 Res1, Res2, Res3;
 	u32 ui_tick = 0;
@@ -240,11 +256,18 @@ void main(void)
 		}
 		sys_read_vp_u16(0x2004, &Set_Hat_Time);
 		sys_read_vp_u16(0x2005, &Set_Hat_Temp);
+		input_time = Set_Hat_Time;
+		input_temp = Set_Hat_Temp;
 		sys_read_vp_u16(0x2006, &Set_War_Temp);
-		sys_write_vp_u16(0x3000, Set_Hat_Time);
 		sys_read_vp_u16(0x2008, &Set_Temp_xs);
 		sys_read_vp_u16(0x2009, &Set_Temp_xs2);
 		sanitize_settings();
+		/* Keep the editable VPs in sync with the clamped values. */
+		if (Set_Hat_Time != input_time)
+			sys_write_vp_u16(0x2004, Set_Hat_Time);
+		if (Set_Hat_Temp != input_temp)
+			sys_write_vp_u16(0x2005, Set_Hat_Temp);
+		sys_write_vp_u16(0x3000, Set_Hat_Time);
 		if ((Temp1 > 128 || Temp2 > 128 || Temp3 > 128) &&
 			(u32)(now_tick - alarm_tick) >= 10000UL)
 		{
