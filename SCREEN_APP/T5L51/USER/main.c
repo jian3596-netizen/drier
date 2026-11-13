@@ -12,7 +12,7 @@ T5L_XDATA u16 val;
 #define DEFAULT_HAT_TEMP_C    60U
 #define DEFAULT_WARM_ENABLE   0U
 #define DEFAULT_TEMP_SCALE    100U
-#define MIN_HAT_TIME_TENTH_MIN 10U
+#define MIN_HAT_TIME_TENTH_MIN 1U
 #define MAX_HAT_TIME_TENTH_MIN 600U
 #define MIN_HAT_TEMP_C 30U
 #define MAX_HAT_TEMP_C 90U
@@ -23,12 +23,12 @@ static u8 sanitize_settings(void)
 
 	if (Set_Hat_Time < MIN_HAT_TIME_TENTH_MIN)
 	{
-		Set_Hat_Time = MIN_HAT_TIME_TENTH_MIN;
+		Set_Hat_Time = MAX_HAT_TIME_TENTH_MIN;
 		changed = 1;
 	}
 	else if (Set_Hat_Time > MAX_HAT_TIME_TENTH_MIN)
 	{
-		Set_Hat_Time = MAX_HAT_TIME_TENTH_MIN;
+		Set_Hat_Time = MIN_HAT_TIME_TENTH_MIN;
 		changed = 1;
 	}
 	if (Set_Hat_Temp < MIN_HAT_TEMP_C)
@@ -262,7 +262,7 @@ void main(void)
 		sys_read_vp_u16(0x2008, &Set_Temp_xs);
 		sys_read_vp_u16(0x2009, &Set_Temp_xs2);
 		sanitize_settings();
-		/* Keep the editable VPs in sync with the clamped values. */
+		/* Keep the editable VPs in sync with wrapped time and clamped temperature. */
 		if (Set_Hat_Time != input_time)
 			sys_write_vp_u16(0x2004, Set_Hat_Time);
 		if (Set_Hat_Temp != input_temp)
